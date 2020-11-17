@@ -1,0 +1,176 @@
+intents:
+  datascienceCommand:
+    initial: true
+    type: text
+    classifier:
+      nlu: datascience
+      match: perintah
+  
+  # This will prevent intent recognized by *fallbackIntent* at *fallback.yml*
+  perintahChosen:
+    initial: true
+    type: data
+    condition: payload.type == 'perintah'
+
+  reenter:
+    type: command
+    condition: content == "reenter"
+
+  MainMenu: 
+    type: text
+    classifier:
+      nlu: mainmenu
+    attributes:
+      mainmenu:
+        nlu: mainmenu
+
+  yesno:
+    type: data
+    condition: payload.type == 'confirm'
+
+states: 
+  init:
+    initial: true
+    transitions:
+      showPizza:
+        condition: "intent == 'datascienceCommand'"
+      init:
+        fallback: true
+        
+  showMenu:
+    action:
+      - name: menuOptions
+      - name: askOptions
+    transitions:
+      MainMenu:
+        condition: "intent == 'perintahChosen'"
+        mapping: 
+          context.perintah: "payload.perintah" # remember payload.pizza for the whole session
+      showMenu:
+        fallback: true
+
+  MainMenu:
+    action:
+      - name: numberMenu
+    transitions:
+      confirmMenu:
+        condition: "intent == 'MainMenu'"
+        mapping:
+          context.mainmenu: "attributes.mainmenu"
+          context.answer: "null"
+      MainMenu:
+        fallback: true
+
+  confirmMenu:
+    action:
+      - name: yesNoButton
+    transitions:
+      done:
+        fallback: true
+        mapping:
+          context.answer: "payload.confirm"
+    transit:
+        context.answer: "intent" 
+  
+  done:
+    end: true
+    action:
+      - name: sayThanks
+        condition: "context.answer == 'yes'"
+      - name: sayThanksSticker
+        condition: "context.answer == 'yes'"
+      - name: cancelOrder
+        condition: "context.answer == 'no'"        
+      - name: saveData
+        condition: "context.answer == 'yes'"
+
+actions:
+  # Example of hard-coded carousel
+  perintahOptions:
+    type: "template"
+    options:
+        type: "carousel"
+        items:
+            - text: 'Informasi Data Science'
+              title: 'Informasi'
+              thumbnailImageUrl: 'https://1.bp.blogspot.com/-xk0iFTxll6w/X7PhkTAT-3I/AAAAAAAAVNM/fqFl_nspj9cor85NwD2TLfdwU_AwfKzXwCLcBGAsYHQ/s1280/COURSE%2B%25283%2529.png'
+              actions:
+                - type: "postback"
+                  label: 'informasi'
+                  payload:
+                    type: perintah
+                    perintah: informasi
+            - text: 'Kursus Data Science'
+              title: 'Kursus'
+              thumbnailImageUrl: 'https://1.bp.blogspot.com/-tqfyi5xW624/X7Phj6bLURI/AAAAAAAAVNE/VW-6FQFEix4AG-b8LQ2Zj3JeLB4WvO5DgCLcBGAsYHQ/s320/COURSE.png'
+              actions:
+                - type: "postback"
+                  label: 'kursus'
+                  payload: 
+                    type: perintah
+                    perintah: kursus
+            - text: 'Karir Data Science'
+              title: 'Karir'
+              thumbnailImageUrl: 'https://1.bp.blogspot.com/-zCBHPC9eH8Y/X7Phj0yW9YI/AAAAAAAAVNI/GYpzyGGVd_s4NiAHXplLQmpET51elsLTgCLcBGAsYHQ/s320/COURSE%2B%25282%2529.png'
+              actions:
+                - type: "postback"
+                  label: 'karir'
+                  payload: 
+                    type: perintah
+                    perintah: karir
+
+  askOptions:
+    type: text
+    options:
+      text: 'Yang mana yang akan kamu pilih?'
+
+  confirmMenu:
+    type: text
+    options:
+      text: "Apakah benar kamu memilih $(context.mainmenu) dari $(context.perintah)?"
+
+  numberMenu:
+    type: text
+    options:
+      text: 'Menu yang mana yang kamu pilih (1-3)'
+      
+  cancelOrder:
+    type: text
+    options:
+      text: "Baik kak, tidak apa-apa, terimakasih atas waktunya"
+
+  sayThanks:
+    type: text
+    options:
+      text: "Baik kak, terimakasih atas waktunya"
+
+  yesNoButton:
+    type: template
+    options:
+      type: button
+      items:
+        text: "Apakah benar kamu memilih $(context.mainmenu) dari $(context.perintah)?"
+        actions:
+          - type: postback
+            label: Yes
+            payload:
+              type: confirm
+              confirm: "yes"
+          - type: postback
+            label: No
+            payload:
+              type: confirm
+              confirm: "no"
+  
+  sayThanksSticker:
+    type: template
+    options:
+        type: sticker
+        items:
+          stickerId: '13'
+          packageId: '1'
+  
+  saveData:
+    type: command
+    options:
+      command: saveData
